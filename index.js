@@ -5,7 +5,8 @@ const express = require('express')
 // importing cores
 const cors = require('cors')
 // importing mongodb
-const { MongoClient, ServerApiVersion } = require('mongodb')
+const { MongoClient, ServerApiVersion } = require('mongodb');
+const jwt = require('jsonwebtoken');
 
 // application port
 const port = process.env.PORT || 5000
@@ -15,7 +16,15 @@ const app = express()
 // middlewares
 
 // using cors middleware
-app.use(cors())
+// corsOptions for jwt
+const corsOptions = {
+  origin: [
+    'http://localhost:5173'
+  ],
+  credentials: true,
+  optionalSuccessStatus: 200,
+}
+app.use(cors(corsOptions))
 // using express.json middleware
 app.use(express.json())
 
@@ -33,9 +42,37 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect to the "insertDB" database and access its "haiku" collection
+    // backend functionality starts here
+
+    // jwt
+    app.post('/jwt', async (req, res) => {
+      // taking user email to create token
+      const email = req.body;
+      // create token
+      const token = jwt.sign(email, process.env.SECRET_KEY, { expiresIn: '5h' });
+      console.log(token);
+      // storing token to the cookie storage
+      res.cookie('viewBlogToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+      }).send({ success: true });
+    })
+
+    // logout and clear saved token from browser cookie
+    app.get('/logout', async (req, res) => {
+      res.clearCookie('viewBlogToken', {
+        maxAge: 0,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+      }).send({ success: true });
+    })
+
+
+    // Connect to the "BlogDB" database and access its "blogs" collection
     const database = client.db("BlogDB");
     const blogsCollection = database.collection("Blogs");
+
 
     // backed apis start here
 
