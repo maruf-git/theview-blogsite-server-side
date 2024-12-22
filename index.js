@@ -6,16 +6,38 @@ const express = require('express')
 const cors = require('cors')
 // importing mongodb
 const { MongoClient, ServerApiVersion } = require('mongodb');
+
+// jwt
 const jwt = require('jsonwebtoken');
 
 // application port
 const port = process.env.PORT || 5000
 // importing express
 const app = express()
+// importing cookie parser
+const cookieParser = require('cookie-parser');
 
 // middlewares
 
-// using cors middleware
+// authentication middleware
+const verifyToken = async (req, res, next) => {
+  // console.log(req.cookies);
+  const tokenFromClient = req.cookies?.viewBlogToken;
+  // console.log('token from client:',tokenFromClient)
+  // no token found check
+  if (!tokenFromClient) return res.status(401).send({ message: 'unauthorized access!' });
+  // invalid token check
+  jwt.verify(tokenFromClient, process.env.SECRET_KEY, (err, decoded) => {
+    if (err) {
+      // console.log("decode error",err)
+      return res.status(401).send({ message: 'unauthorized access!' });
+    }
+    req.user = decoded;
+    // console.log(req.user);
+  })
+  next();
+}
+
 // corsOptions for jwt
 const corsOptions = {
   origin: [
@@ -24,9 +46,12 @@ const corsOptions = {
   credentials: true,
   optionalSuccessStatus: 200,
 }
+// using cors middleware
 app.use(cors(corsOptions))
 // using express.json middleware
 app.use(express.json())
+// using cookie parser
+app.use(cookieParser());
 
 // mongodb uri 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.eeint.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -50,7 +75,7 @@ async function run() {
       const email = req.body;
       // create token
       const token = jwt.sign(email, process.env.SECRET_KEY, { expiresIn: '5h' });
-      console.log(token);
+      // console.log(token);
       // storing token to the cookie storage
       res.cookie('viewBlogToken', token, {
         httpOnly: true,
@@ -83,7 +108,8 @@ async function run() {
     })
 
     // add blog to the blogs collection
-    app.post('/add-blog', async (req, res) => {
+    // verifyToken,
+    app.post('/add-blog',verifyToken, async (req, res) => {
       const blog = req.body;
       const result = await blogsCollection.insertOne(blog);
       res.send(result);
