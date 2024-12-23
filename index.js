@@ -5,7 +5,7 @@ const express = require('express')
 // importing cores
 const cors = require('cors')
 // importing mongodb
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 // jwt
 const jwt = require('jsonwebtoken');
@@ -41,7 +41,8 @@ const verifyToken = async (req, res, next) => {
 // corsOptions for jwt
 const corsOptions = {
   origin: [
-    'http://localhost:5173'
+    'http://localhost:5173',
+    'http://localhost:5174'
   ],
   credentials: true,
   optionalSuccessStatus: 200,
@@ -112,6 +113,14 @@ async function run() {
     app.post('/add-blog',verifyToken, async (req, res) => {
       const blog = req.body;
       const result = await blogsCollection.insertOne(blog);
+      res.send(result);
+    })
+    
+    // get specific blog by id
+    app.get('/blogs/:id',verifyToken,async(req,res)=>{
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const result = await blogsCollection.findOne(filter);
       res.send(result);
     })
 
