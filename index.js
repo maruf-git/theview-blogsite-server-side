@@ -97,7 +97,11 @@ async function run() {
 
     // Connect to the "BlogDB" database and access its "blogs" collection
     const database = client.db("BlogDB");
+    // creating blogs collection
     const blogsCollection = database.collection("Blogs");
+    // creating comments collection
+    const commentsCollection = database.collection("Comments");
+
 
 
     // backed apis start here
@@ -117,12 +121,22 @@ async function run() {
     })
     
     // get specific blog by id
-    app.get('/blogs/:id',verifyToken,async(req,res)=>{
+    // verifyToken,
+    app.get('/blogs/:id',async(req,res)=>{
       const id = req.params.id;
       const filter = {_id: new ObjectId(id)};
       const result = await blogsCollection.findOne(filter);
       res.send(result);
     })
+
+    // add comment to the comments collection
+     // verifyToken,
+     app.post('/add-comment', async (req, res) => {
+      const comment = req.body;
+      const result = await commentsCollection.insertOne(comment);
+      res.send(result);
+    })
+
 
 
 
