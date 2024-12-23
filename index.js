@@ -108,7 +108,18 @@ async function run() {
 
     // get all blogs
     app.get('/blogs', async (req, res) => {
-      const result = await blogsCollection.find().toArray();
+      const filter = req.query.filter;
+      const search = req.query.search;
+      let query = {
+        title: {
+          $regex: search,
+          $options: 'i',
+        },
+      }
+      if (filter) {
+        query.category = filter
+      }
+      const result = await blogsCollection.find(query).toArray();
       res.send(result);
     })
 
@@ -134,11 +145,9 @@ async function run() {
     app.patch('/update-blog/:id', async (req, res) => {
       const id = req.params.id;
       const blog = req.body;
-      // console.log('found id', id);
-      // console.log("blog:",blog);
-      const {title,category,short_des,description,image}=blog;
-      const filter = {_id: new ObjectId(id)};
-      const updateDoc ={
+      const { title, category, short_des, description, image } = blog;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
         $set: {
           title,
           category,
@@ -147,7 +156,7 @@ async function run() {
           short_des
         },
       }
-      const result = await blogsCollection.updateOne(filter,updateDoc)
+      const result = await blogsCollection.updateOne(filter, updateDoc)
       res.send(result);
     })
 
