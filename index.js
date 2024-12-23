@@ -112,14 +112,6 @@ async function run() {
       res.send(result);
     })
 
-    // add blog to the blogs collection
-    // verifyToken,
-    app.post('/add-blog', verifyToken, async (req, res) => {
-      const blog = req.body;
-      const result = await blogsCollection.insertOne(blog);
-      res.send(result);
-    })
-
     // get specific blog by id
     // verifyToken,
     app.get('/blogs/:id', async (req, res) => {
@@ -130,10 +122,41 @@ async function run() {
     })
 
 
-    // get all comments on specific blog_id
-    app.get('/comments/:id',async(req,res)=>{
+    // add blog to the blogs collection
+    // verifyToken,
+    app.post('/add-blog', verifyToken, async (req, res) => {
+      const blog = req.body;
+      const result = await blogsCollection.insertOne(blog);
+      res.send(result);
+    })
+
+    // update blog by id
+    app.patch('/update-blog/:id', async (req, res) => {
       const id = req.params.id;
-      const filter = {blog_id:id};
+      const blog = req.body;
+      // console.log('found id', id);
+      // console.log("blog:",blog);
+      const {title,category,short_des,description,image}=blog;
+      const filter = {_id: new ObjectId(id)};
+      const updateDoc ={
+        $set: {
+          title,
+          category,
+          image,
+          description,
+          short_des
+        },
+      }
+      const result = await blogsCollection.updateOne(filter,updateDoc)
+      res.send(result);
+    })
+
+
+
+    // get all comments on specific blog_id
+    app.get('/comments/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { blog_id: id };
       const result = await commentsCollection.find(filter).toArray();
       res.send(result);
     })
