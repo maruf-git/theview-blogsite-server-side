@@ -102,6 +102,8 @@ async function run() {
     const blogsCollection = database.collection("Blogs");
     // creating comments collection
     const commentsCollection = database.collection("Comments");
+    // creating wishlist collection
+    const wishlistCollection = database.collection("Wishlist");
 
 
 
@@ -124,9 +126,21 @@ async function run() {
       res.send(result);
     })
 
+    // get blogs by email
+    app.get('/blogs/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const decodedEmail = req?.user?.email;
+      if (email !== decodedEmail) {
+        return res.status(401).send({ message: 'unauthorized access' });
+      }
+      const filter = { blogger_email: email };
+      const result = await blogsCollection.find(filter).toArray();
+      res.send(result);
+    })
+
     // get specific blog by id
     // verifyToken,
-    app.get('/blogs/:id', verifyToken, async (req, res) => {
+    app.get('/blog/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const result = await blogsCollection.findOne(filter);
@@ -137,7 +151,7 @@ async function run() {
     // get featured blogs(top 10 blogs with max description)
     app.get('/featured-blogs', async (req, res) => {
       const filter = {};
-      const result = await blogsCollection.find(filter).limit(2).sort({ 'length': -1 }).toArray();
+      const result = await blogsCollection.find(filter).limit(10).sort({ 'length': -1 }).toArray();
       res.send(result);
 
     })
@@ -179,6 +193,9 @@ async function run() {
 
 
 
+    // <--------------------comment apis starts here-------------->
+
+
     // get all comments on specific blog_id
     app.get('/comments/:id', async (req, res) => {
       const id = req.params.id;
@@ -196,6 +213,15 @@ async function run() {
     })
 
 
+
+    // <--------------------wishlist apis starts here-------------->
+
+    //  add a blog to wishlist
+    app.post('/wishlist', async (req, res) => {
+      const wishlistInfo = req.body;
+      const result = await wishlistCollection.insertOne(wishlistInfo);
+      res.send(result);
+    })
 
 
 
