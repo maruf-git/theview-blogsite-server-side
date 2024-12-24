@@ -20,17 +20,16 @@ const cookieParser = require('cookie-parser');
 // middlewares
 
 // authentication middleware
-const verifyToken = async (req, res, next) => {
+const verifyToken = (req, res, next) => {
   // console.log(req.cookies);
   const tokenFromClient = req.cookies?.viewBlogToken;
-  // console.log('token from client:',tokenFromClient)
   // no token found check
   if (!tokenFromClient) return res.status(401).send({ message: 'unauthorized access!' });
   // invalid token check
   jwt.verify(tokenFromClient, process.env.SECRET_KEY, (err, decoded) => {
     if (err) {
       // console.log("decode error",err)
-      res.invalidToken = true;
+      // res.invalidToken = true;
       return res.status(401).send({ message: 'unauthorized access!' });
     }
     req.user = decoded;
@@ -79,10 +78,12 @@ async function run() {
       const token = jwt.sign(email, process.env.SECRET_KEY, { expiresIn: '5h' });
       // console.log(token);
       // storing token to the cookie storage
+      // maxAge:3600*1000
       res.cookie('viewBlogToken', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+       
       }).send({ success: true });
     })
 
@@ -127,20 +128,20 @@ async function run() {
     })
 
     // get blogs by email
-    app.get('/blogs/:email', verifyToken, async (req, res) => {
-      const email = req.params.email;
-      const decodedEmail = req?.user?.email;
-      if (email !== decodedEmail) {
-        return res.status(401).send({ message: 'unauthorized access' });
-      }
-      const filter = { blogger_email: email };
-      const result = await blogsCollection.find(filter).toArray();
-      res.send(result);
-    })
+    // app.get('/blogs/:email', verifyToken, async (req, res) => {
+    //   const email = req.params.email;
+    //   const decodedEmail = req?.user?.email;
+    //   if (email !== decodedEmail) {
+    //     return res.status(401).send({ message: 'unauthorized access' });
+    //   }
+    //   const filter = { blogger_email: email };
+    //   const result = await blogsCollection.find(filter).toArray();
+    //   res.send(result);
+    // })
 
     // get specific blog by id
     // verifyToken,
-    app.get('/blog/:id', verifyToken, async (req, res) => {
+    app.get('/blog/:id',verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const result = await blogsCollection.findOne(filter);
@@ -161,19 +162,20 @@ async function run() {
     // verifyToken,
     app.post('/add-blog', verifyToken, async (req, res) => {
       // invalid token checking extra layer 
-      if (req?.invalidToken) {
-        console.log("invalid token user")
-        res.send({ message: 'Your token is invalid' });
-      }
-      else {
-        const blog = req.body;
-        const result = await blogsCollection.insertOne(blog);
-        res.send(result);
-      }
+      // if (req?.invalidToken) {
+      //   console.log("invalid token user")
+      //   res.send({ message: 'Your token is invalid' });
+      // }
+      // else {
+       
+      // }
+      const blog = req.body;
+      const result = await blogsCollection.insertOne(blog);
+      res.send(result);
     })
 
     // update blog by id
-    app.patch('/update-blog/:id', async (req, res) => {
+    app.patch('/update-blog/:id',verifyToken, async (req, res) => {
       const id = req.params.id;
       const blog = req.body;
       const { title, category, short_des, description, image } = blog;
@@ -224,9 +226,9 @@ async function run() {
     })
 
     // get wishlist by user email
-    app.get('/wishlist/:email', verifyToken, async (req, res) => {
+    app.get('/wishlist/:email',verifyToken, async (req, res) => {
       const email = req.params.email;
-      const decodedEmail = req?.user?.email;
+      const decodedEmail = req.user?.email;
       if (email !== decodedEmail) {
         return res.status(401).send({ message: 'unauthorized access' });
       }
