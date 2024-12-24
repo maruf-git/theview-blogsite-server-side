@@ -234,7 +234,14 @@ async function run() {
       const result = await wishlistCollection.find(filter).toArray();
       res.send(result);
     })
-
+    
+    // delete specific blog from wishlist using id
+    app.delete('/delete-wishlist/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const result = await wishlistCollection.deleteOne(filter);
+      res.send(result);
+    })
 
 
 
