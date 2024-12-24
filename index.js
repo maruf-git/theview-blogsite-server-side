@@ -223,6 +223,19 @@ async function run() {
       res.send(result);
     })
 
+    // get wishlist by user email
+    app.get('/wishlist/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const decodedEmail = req?.user?.email;
+      if (email !== decodedEmail) {
+        return res.status(401).send({ message: 'unauthorized access' });
+      }
+      const filter = { email };
+      const result = await wishlistCollection.find(filter).toArray();
+      res.send(result);
+    })
+
+
 
 
 
