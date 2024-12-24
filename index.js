@@ -30,6 +30,7 @@ const verifyToken = async (req, res, next) => {
   jwt.verify(tokenFromClient, process.env.SECRET_KEY, (err, decoded) => {
     if (err) {
       // console.log("decode error",err)
+      res.invalidToken = true;
       return res.status(401).send({ message: 'unauthorized access!' });
     }
     req.user = decoded;
@@ -125,20 +126,36 @@ async function run() {
 
     // get specific blog by id
     // verifyToken,
-    app.get('/blogs/:id', async (req, res) => {
+    app.get('/blogs/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const result = await blogsCollection.findOne(filter);
       res.send(result);
+
+    })
+
+    // get featured blogs(top 10 blogs with max description)
+    app.get('/featured-blogs', async (req, res) => {
+      const filter = {};
+      const result = await blogsCollection.find(filter).limit(2).sort({ 'length': -1 }).toArray();
+      res.send(result);
+
     })
 
 
     // add blog to the blogs collection
     // verifyToken,
     app.post('/add-blog', verifyToken, async (req, res) => {
-      const blog = req.body;
-      const result = await blogsCollection.insertOne(blog);
-      res.send(result);
+      // invalid token checking extra layer 
+      if (req?.invalidToken) {
+        console.log("invalid token user")
+        res.send({ message: 'Your token is invalid' });
+      }
+      else {
+        const blog = req.body;
+        const result = await blogsCollection.insertOne(blog);
+        res.send(result);
+      }
     })
 
     // update blog by id
