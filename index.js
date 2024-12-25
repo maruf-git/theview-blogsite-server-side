@@ -24,25 +24,33 @@ const verifyToken = (req, res, next) => {
   // console.log(req.cookies);
   const tokenFromClient = req.cookies?.viewBlogToken;
   // no token found check
-  if (!tokenFromClient) return res.status(401).send({ message: 'unauthorized access!' });
+  if (!tokenFromClient)
+    {
+      console.log('token not found');
+      return res.status(401).send({ message: 'unauthorized access!' })
+    };
   // invalid token check
   jwt.verify(tokenFromClient, process.env.SECRET_KEY, (err, decoded) => {
     if (err) {
       // console.log("decode error",err)
       // res.invalidToken = true;
+      console.log('your comment token is invalid');
       return res.status(401).send({ message: 'unauthorized access!' });
     }
     req.user = decoded;
+    next();
     // console.log(req.user);
   })
-  next();
+
 }
 
 // corsOptions for jwt
 const corsOptions = {
   origin: [
     'http://localhost:5173',
-    'http://localhost:5174'
+    'http://localhost:5174',
+    'https://view-blog-website.web.app',
+    'https://view-blog-website.firebaseapp.com'
   ],
   credentials: true,
   optionalSuccessStatus: 200,
@@ -66,6 +74,7 @@ const client = new MongoClient(uri, {
   },
 })
 
+
 async function run() {
   try {
     // backend functionality starts here
@@ -83,7 +92,7 @@ async function run() {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-       
+
       }).send({ success: true });
     })
 
@@ -127,6 +136,13 @@ async function run() {
       res.send(result);
     })
 
+    // get Recent 6 blogs
+    app.get("/blogs/recent", async (req, res) => {
+      const cursor = blogsCollection.find().sort({ _id: -1 }).limit(6);
+      const result = await cursor.toArray();
+      res.send(result);
+    })
+
     // get blogs by email
     // app.get('/blogs/:email', verifyToken, async (req, res) => {
     //   const email = req.params.email;
@@ -141,11 +157,21 @@ async function run() {
 
     // get specific blog by id
     // verifyToken,
-    app.get('/blog/:id',verifyToken, async (req, res) => {
+    app.get('/blog/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
+      // / Check if the provided id is a valid ObjectId
+      if (!ObjectId.isValid(id)) {
+        return res.status(404).send({ message: 'Invalid blog ID format' });
+      }
       const filter = { _id: new ObjectId(id) };
       const result = await blogsCollection.findOne(filter);
-      res.send(result);
+      if (!result) {
+        return res.status(404).send({ message: 'Blog not found' });
+      }
+      else {
+        res.send(result);
+      }
+
 
     })
 
@@ -167,7 +193,7 @@ async function run() {
       //   res.send({ message: 'Your token is invalid' });
       // }
       // else {
-       
+
       // }
       const blog = req.body;
       const result = await blogsCollection.insertOne(blog);
@@ -175,7 +201,7 @@ async function run() {
     })
 
     // update blog by id
-    app.patch('/update-blog/:id',verifyToken, async (req, res) => {
+    app.patch('/update-blog/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
       const blog = req.body;
       const { title, category, short_des, description, image } = blog;
@@ -208,7 +234,7 @@ async function run() {
 
     // add comment to the comments collection
     // verifyToken,
-    app.post('/add-comment', async (req, res) => {
+    app.post('/add-comment',verifyToken, async (req, res) => {
       const comment = req.body;
       const result = await commentsCollection.insertOne(comment);
       res.send(result);
@@ -226,7 +252,7 @@ async function run() {
     })
 
     // get wishlist by user email
-    app.get('/wishlist/:email',verifyToken, async (req, res) => {
+    app.get('/wishlist/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
       const decodedEmail = req.user?.email;
       if (email !== decodedEmail) {
@@ -236,7 +262,7 @@ async function run() {
       const result = await wishlistCollection.find(filter).toArray();
       res.send(result);
     })
-    
+
     // delete specific blog from wishlist using id
     app.delete('/delete-wishlist/:id', async (req, res) => {
       const id = req.params.id;
