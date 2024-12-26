@@ -26,7 +26,7 @@ const verifyToken = (req, res, next) => {
   // no token found check
   if (!tokenFromClient)
     {
-      console.log('token not found');
+      // console.log('token not found');
       return res.status(401).send({ message: 'unauthorized access!' })
     };
   // invalid token check
