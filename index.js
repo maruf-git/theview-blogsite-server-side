@@ -245,7 +245,7 @@ async function run() {
     // <--------------------wishlist apis starts here-------------->
 
     //  add a blog to wishlist
-    app.post('/wishlist', async (req, res) => {
+    app.post('/wishlist',verifyToken, async (req, res) => {
       const wishlistInfo = req.body;
       const result = await wishlistCollection.insertOne(wishlistInfo);
       res.send(result);
