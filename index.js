@@ -34,7 +34,7 @@ const verifyToken = (req, res, next) => {
     if (err) {
       // console.log("decode error",err)
       // res.invalidToken = true;
-      console.log('your comment token is invalid');
+      // console.log('your comment token is invalid');
       return res.status(401).send({ message: 'unauthorized access!' });
     }
     req.user = decoded;
@@ -49,6 +49,7 @@ const corsOptions = {
   origin: [
     'http://localhost:5173',
     'http://localhost:5174',
+    'http://localhost:5178',
     'https://view-blog-website.web.app',
     'https://view-blog-website.firebaseapp.com'
   ],
@@ -157,7 +158,7 @@ async function run() {
 
     // get specific blog by id
     // verifyToken,
-    app.get('/blog/:id', verifyToken, async (req, res) => {
+    app.get('/blog/:id', async (req, res) => {
       const id = req.params.id;
       // / Check if the provided id is a valid ObjectId
       if (!ObjectId.isValid(id)) {
